@@ -1,7 +1,9 @@
 package p2p
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"net"
 	"sync"
 )
@@ -18,6 +20,7 @@ type Server struct {
 	mu       sync.RWMutex
 	peers    map[net.Addr]*Peer
 	addPeer  chan *Peer
+	msgCh    chan *Message
 }
 
 func NewServer(cfg ServerConfig) *Server {
@@ -26,6 +29,7 @@ func NewServer(cfg ServerConfig) *Server {
 		ServerConfig: cfg,
 		peers:        make(map[net.Addr]*Peer),
 		addPeer:      make(chan *Peer),
+		msgCh:        make(chan *Message),
 	}
 }
 
@@ -61,16 +65,23 @@ func (s *Server) acceptLoop() {
 	}
 }
 
+func (s *Server) sendMessageFromConnection(conn net.Conn, buf []byte, lenBuff int) {
+	s.msgCh <- &Message{
+		From:    conn.RemoteAddr(),
+		Payload: bytes.NewReader(buf[:lenBuff]),
+	}
+}
+
 func (s *Server) handleConn(conn net.Conn) {
 	buf := make([]byte, 1024)
 	for {
+		// get buf from connection
 		n, err := conn.Read(buf)
 		if err != nil {
 			fmt.Println(err)
 			break
 		}
-
-		fmt.Println(string(buf[:n]))
+		go s.sendMessageFromConnection(conn, buf, n)
 	}
 }
 
@@ -89,6 +100,9 @@ func (s *Server) loop() {
 		case peer := <-s.addPeer:
 			fmt.Printf("new player connected %s\n", peer.conn.RemoteAddr())
 			s.peers[peer.conn.RemoteAddr()] = peer
+		case message := <-s.msgCh:
+			msg, _ := io.ReadAll(message.Payload)
+			fmt.Printf("message from: %s -> %s\n", message.From, string(msg))
 		}
 	}
 }
