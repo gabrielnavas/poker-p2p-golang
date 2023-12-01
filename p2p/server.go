@@ -19,15 +19,18 @@ type Server struct {
 	mu       sync.RWMutex
 	peers    map[net.Addr]*Peer
 	addPeer  chan *Peer
+	delPeer  chan *Peer
 	msgCh    chan *Message
 }
 
 func NewServer(cfg ServerConfig) *Server {
+	dh := NewDefaultHandler()
 	return &Server{
-		handler:      NewDefaultHandler(),
+		handler:      dh,
 		ServerConfig: cfg,
 		peers:        make(map[net.Addr]*Peer),
 		addPeer:      make(chan *Peer),
+		delPeer:      make(chan *Peer),
 		msgCh:        make(chan *Message),
 	}
 }
@@ -77,7 +80,7 @@ func (s *Server) handleConn(conn net.Conn) {
 		// get buf from connection
 		n, err := conn.Read(buf)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Printf("err '%s'; connection %s exit\n", err.Error(), conn.RemoteAddr())
 			break
 		}
 		go s.sendMessageFromConnection(conn, buf, n)
@@ -96,6 +99,9 @@ func (s *Server) listen() error {
 func (s *Server) loop() {
 	for {
 		select {
+		case peer := <-s.delPeer:
+			delete(s.peers, peer.conn.RemoteAddr())
+			fmt.Printf("player disconnected %s\n", peer.conn.RemoteAddr())
 		case peer := <-s.addPeer:
 			fmt.Printf("new player connected %s\n", peer.conn.RemoteAddr())
 			s.peers[peer.conn.RemoteAddr()] = peer
