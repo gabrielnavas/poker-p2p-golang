@@ -3,7 +3,6 @@ package p2p
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"net"
 	"sync"
 )
@@ -25,7 +24,7 @@ type Server struct {
 
 func NewServer(cfg ServerConfig) *Server {
 	return &Server{
-		handler:      *NewHandler(),
+		handler:      NewDefaultHandler(),
 		ServerConfig: cfg,
 		peers:        make(map[net.Addr]*Peer),
 		addPeer:      make(chan *Peer),
@@ -101,8 +100,9 @@ func (s *Server) loop() {
 			fmt.Printf("new player connected %s\n", peer.conn.RemoteAddr())
 			s.peers[peer.conn.RemoteAddr()] = peer
 		case message := <-s.msgCh:
-			msg, _ := io.ReadAll(message.Payload)
-			fmt.Printf("message from: %s -> %s\n", message.From, string(msg))
+			if err := s.handler.HandleMessage(message); err != nil {
+				panic(err)
+			}
 		}
 	}
 }
