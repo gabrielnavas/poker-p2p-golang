@@ -6,10 +6,6 @@ import (
 	"sync"
 )
 
-type Peer struct {
-	conn net.Conn
-}
-
 type ServerConfig struct {
 	ListenAddr string
 }
@@ -55,6 +51,9 @@ func (s *Server) acceptLoop() {
 			conn: conn,
 		}
 		s.addPeer <- peer
+
+		// sendo first message to peer
+		peer.Send([]byte("hello player!!"))
 
 		go s.handleConn(conn)
 	}
