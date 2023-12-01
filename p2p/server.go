@@ -13,6 +13,7 @@ type ServerConfig struct {
 type Server struct {
 	ServerConfig
 
+	handler  Handler
 	listener net.Listener
 	mu       sync.RWMutex
 	peers    map[net.Addr]*Peer
@@ -21,6 +22,7 @@ type Server struct {
 
 func NewServer(cfg ServerConfig) *Server {
 	return &Server{
+		handler:      *NewHandler(),
 		ServerConfig: cfg,
 		peers:        make(map[net.Addr]*Peer),
 		addPeer:      make(chan *Peer),
@@ -52,8 +54,8 @@ func (s *Server) acceptLoop() {
 		}
 		s.addPeer <- peer
 
-		// sendo first message to peer
-		peer.Send([]byte("hello player!!"))
+		// send first message to peer
+		peer.Send([]byte("GGPOKER V0.1=alpha"))
 
 		go s.handleConn(conn)
 	}
