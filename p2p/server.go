@@ -8,6 +8,7 @@ import (
 )
 
 type ServerConfig struct {
+	Version    string
 	ListenAddr string
 }
 
@@ -61,30 +62,34 @@ func (s *Server) acceptLoop() {
 		s.addPeer <- peer
 
 		// send first message to peer
-		peer.Send([]byte("GGPOKER V0.1=alpha"))
+		peer.Send([]byte(s.Version))
 
-		go s.handleConn(conn)
+		go s.handleConn(peer)
 	}
 }
 
-func (s *Server) sendMessageFromConnection(conn net.Conn, buf []byte, lenBuff int) {
-	s.msgCh <- &Message{
-		From:    conn.RemoteAddr(),
-		Payload: bytes.NewReader(buf[:lenBuff]),
-	}
-}
-
-func (s *Server) handleConn(conn net.Conn) {
+func (s *Server) readMessageLoop(peer *Peer) {
 	buf := make([]byte, 1024)
 	for {
-		// get buf from connection
-		n, err := conn.Read(buf)
+		n, err := peer.conn.Read(buf)
 		if err != nil {
-			fmt.Printf("err '%s'; connection %s exit\n", err.Error(), conn.RemoteAddr())
 			break
 		}
-		go s.sendMessageFromConnection(conn, buf, n)
+
+		s.msgCh <- &Message{
+			From:    peer.conn.RemoteAddr(),
+			Payload: bytes.NewReader(buf[:n]),
+		}
 	}
+}
+
+func (s *Server) removePeer(peer *Peer) {
+	s.delPeer <- peer
+}
+
+func (s *Server) handleConn(peer *Peer) {
+	s.readMessageLoop(peer)
+	s.removePeer(peer)
 }
 
 func (s *Server) listen() error {

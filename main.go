@@ -7,6 +7,7 @@ func main() {
 	// like this: nc -T localhost 3000
 
 	cfg := p2p.ServerConfig{
+		Version:    "GGPOKER V0.1-alpha",
 		ListenAddr: ":3000",
 	}
 	s := p2p.NewServer(cfg)
