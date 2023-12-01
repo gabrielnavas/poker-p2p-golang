@@ -56,3 +56,25 @@ func TestNewDeck(t *testing.T) {
 		cardsIndex++
 	}
 }
+
+func TestShurffle(t *testing.T) {
+	var (
+		deckNonShurffled = deck.New()
+		deckShurffled    = deck.Shurffle(deckNonShurffled)
+	)
+
+	var (
+		equalsTriesChances = 2
+		lenDeck            = len(deckNonShurffled)
+	)
+
+	for i := 0; i < lenDeck && equalsTriesChances > 0; i++ {
+		if deckNonShurffled[i] == deckShurffled[i] {
+			equalsTriesChances--
+		}
+	}
+
+	if equalsTriesChances == 0 {
+		t.Fatalf("expected equalsTriesChances > 0 received %d\n", equalsTriesChances)
+	}
+}

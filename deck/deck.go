@@ -1,5 +1,7 @@
 package deck
 
+import "math/rand"
+
 type Deck [52]Card
 
 func New() Deck {
@@ -20,4 +22,14 @@ func New() Deck {
 		}
 	}
 	return cards
+}
+
+func Shurffle(d Deck) Deck {
+	for i := 0; i < len(d); i++ {
+		r := rand.Intn(i + 1)
+		if r != i {
+			d[i], d[r] = d[r], d[i]
+		}
+	}
+	return d
 }
