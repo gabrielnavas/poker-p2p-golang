@@ -37,21 +37,9 @@ func (s *Server) Start() {
 		panic(err)
 	}
 
-	fmt.Printf("game server running on port %s", s.ListenAddr)
+	fmt.Printf("game server running on port %s\n", s.ListenAddr)
 
 	s.acceptLoop()
-}
-
-func (s *Server) handleConn(conn net.Conn) {
-	buf := make([]byte, 1024)
-	for {
-		n, err := conn.Read(buf)
-		if err != nil {
-			break
-		}
-
-		fmt.Println(string(buf[:n]))
-	}
 }
 
 func (s *Server) acceptLoop() {
@@ -61,7 +49,27 @@ func (s *Server) acceptLoop() {
 			// TODO: handle accept listener error
 			panic(err)
 		}
+
+		// add peer
+		peer := &Peer{
+			conn: conn,
+		}
+		s.addPeer <- peer
+
 		go s.handleConn(conn)
+	}
+}
+
+func (s *Server) handleConn(conn net.Conn) {
+	buf := make([]byte, 1024)
+	for {
+		n, err := conn.Read(buf)
+		if err != nil {
+			fmt.Println(err)
+			break
+		}
+
+		fmt.Println(string(buf[:n]))
 	}
 }
 
