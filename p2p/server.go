@@ -47,6 +47,24 @@ func (s *Server) Start() {
 	s.acceptLoop()
 }
 
+// TODO: right now we have some redundant code in registration new peers to the game network
+// maybe construct a new eper and handshake protocol after registering a plain connection?
+func (s *Server) Connect(addr string) error {
+	conn, err := net.Dial("tcp", addr)
+	if err != nil {
+		return err
+	}
+
+	// add peer
+	peer := &Peer{
+		conn: conn,
+	}
+	s.addPeer <- peer
+
+	// send first message to peer
+	return peer.Send([]byte(s.Version))
+}
+
 func (s *Server) acceptLoop() {
 	for {
 		conn, err := s.listener.Accept()

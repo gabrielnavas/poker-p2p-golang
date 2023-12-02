@@ -11,5 +11,13 @@ func main() {
 		ListenAddr: ":3000",
 	}
 	s := p2p.NewServer(cfg)
-	s.Start()
+	go s.Start()
+
+	remoteCfg := p2p.ServerConfig{
+		Version:    "GGPOKER V0.1-alpha",
+		ListenAddr: ":4000",
+	}
+	remoteServer := p2p.NewServer(remoteCfg)
+	remoteServer.Connect(cfg.ListenAddr)
+	remoteServer.Start()
 }
